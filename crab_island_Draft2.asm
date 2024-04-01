@@ -58,12 +58,7 @@ main: ### $t9 stores current, $t8 stores previous
 	j END
 	
 
-############ CHECK COLLISIONS######################
-CHECK_COLLISIONS:
-
-
-	
-	
+############ CHECK COLLISIONS######################	 #gravity and damage
 ### CHECK BOTTOM COLLISION
 CHECK_BOTTOM_COLLISIONS:
 	add $t0, $t9, $zero #t9 has top left corner
@@ -75,13 +70,14 @@ CHECK_BOTTOM_COLLISIONS:
 	#t3, if left is not blue 
 	lw $t3, 0($t1)
 	li $t4, BACKGROUND_BLUE
-	bne $t3, $t4, CHECK_KEY_PRESSED
-	
+	beq $t3, $t4, if_left_floating
+	jr $ra
+if_left_floating:
 	lw $t3, 0($t2)
-	bne $t3, 0x0096d9e9, CHECK_KEY_PRESSED
-	
-	j DO_GRAVITY
-	
+	beq $t3, $t4, DO_GRAVITY
+	jr $ra
+
+
 	
 ###### CHECK KEY_PRESSED #######################
 CHECK_KEY_PRESSED:
@@ -89,9 +85,13 @@ CHECK_KEY_PRESSED:
 	lw $t2, 0($t1) 
 	bne $t2, 1, end_if_keypressed_happened  
 	lw $t0, 4($t1) # this assumes $t1 s set to 0xfff0000 from before
-	
+	###print int result of A+42
+	li $v0, 1
+	move $a0, $ra
+	syscall
 	### check wasd keys
 	beq $t0, 100, if_d_pressed
+	j end_if_keypressed_happened
 
 if_d_pressed:
 	jal move_RIGHT
@@ -99,22 +99,20 @@ if_d_pressed:
 
 do_jump:
 	### move crab
-	
-	
 
 end_if_keypressed_happened:
-	
-	j NO_CHANGE
+j NO_CHANGE
 	
 	
 GAME_LOOP:
-	jal CHECK_COLLISIONS
+	jal CHECK_BOTTOM_COLLISIONS
 	j CHECK_KEY_PRESSED
 NO_CHANGE:
 	jal loadCrabColours
+	
 	### sleep frame rate
 	li $v0, 32
-	li $a0, 25 #MAINTAIN STABLER FRAME RATE
+	li $a0, 1000 #MAINTAIN STABLER FRAME RATE
 	syscall
 	j GAME_LOOP
 
@@ -144,17 +142,12 @@ setPixel_SCREEN:
    	addi $t0, $t0, 4 # increment $t2 to next index
     	addi $t3, $t3, 4 #increment background to next value
     	ble $t0, $t2, setPixel_SCREEN #$t2 is adress of bottom right corn of the image
-    	
     	jr $ra 
 	
 
 move_RIGHT:
-	li $t0, VELOCITY
-	li $t1, 4 ## each push of the button should increase by thins amount
-	mult $t0, $t1
-	mflo $t1
 	add $t8, $t9, $zero #save last position
-	add $t9, $t9, $t1 #move right
+	addi $t9, $t9, 4 #move right
 	j eraseCrab
 
 eraseCrab:
